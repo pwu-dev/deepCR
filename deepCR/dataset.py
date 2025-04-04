@@ -91,12 +91,16 @@ class DatasetSim(Dataset):
         return self.len_image
 
     def __getitem__(self, i):
+        # cr array (and its mask) without astronomic objetcs and sky background
         cr, mask = self.get_cr()
+        # ignore mask for ignoring defective pixels in the loss/metrics computation 
         image, ignore = self.get_image(i)
         f_bkg_aug = self.aug_sky[0] + np.random.rand() * (self.aug_sky[1] - self.aug_sky[0])
         f_img_aug = self.aug_img[0] + np.random.rand() * (self.aug_img[1] - self.aug_img[0])
         f_img_aug = 10**f_img_aug
+        # sky background augmentation
         bkg = f_bkg_aug * self.sky[i]
+        # astronomic objects and sky background multiplied by the f_img_aug factor (exposure time augmentation)
         img = (image + bkg) * f_img_aug + cr
         scale = img.copy()
         scale[scale < 1] = 1.
