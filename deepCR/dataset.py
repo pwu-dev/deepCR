@@ -8,7 +8,10 @@ __all__ = ['dataset', 'DatasetSim']
 class DatasetSim(Dataset):
     def __init__(self, image, cr, sky=None, aug_sky=(0, 0), aug_img=(1, 1), noise=False, saturation=1e5,
                  n_mask=1, norm=False, percentile_limit=100, part=None, f_val=0.1, seed=1):
-        """ custom pytorch dataset class to load deepCR-mask training data
+        """ 
+        Set the dataset with the arguments : images path, CR masks path, augmentation parameters on sky/image/CR
+        and the data partition (train/val)
+        custom pytorch dataset class to load deepCR-mask training data
         :param image: list of complete path to npy arrays, each containing one 2D image
         :param cr: list of complete path to npy arrays, each containing one 2D mask
         :param sky: np.ndarray [N,] or float, sky background level
@@ -66,6 +69,7 @@ class DatasetSim(Dataset):
 
     def get_cr(self):
         """
+        Return the augmented CRs data with CR only images (without astronomic objects) and CRs masks 
         Generate cosmic ray images from stacked dark frames.
         Sample self.n_mask number of cr masks and add them together.
         :return: (cr_img, cr_mask): sampled and added dark image containing only cr and accumulative cr mask
@@ -81,6 +85,9 @@ class DatasetSim(Dataset):
         return crs, masks
 
     def get_image(self, i):
+        """
+        Return a tuple of the sample image i of the dataset and its ignore mask
+        """
         data = np.load(self.image[i]) if type(self.image[i]) == str else self.image[i]
         if len(data.shape) == 3:
             return data[0], data[1]
@@ -88,9 +95,15 @@ class DatasetSim(Dataset):
             return data, np.zeros_like(data)
 
     def __len__(self):
+        """
+        Return the number of images in the dataset
+        """
         return self.len_image
 
     def __getitem__(self, i):
+        """
+        Return the augmented sample image i with its CR mask and its ignore mask
+        """
         # cr array (and its mask) without astronomic objetcs and sky background
         cr, mask = self.get_cr()
         # ignore mask for ignoring defective pixels in the loss/metrics computation 
@@ -125,7 +138,10 @@ class DatasetSim(Dataset):
 
 class dataset(Dataset):
     def __init__(self, image, mask, ignore=None, sky=None, aug_sky=[0, 0], part=None, f_val=0.1, seed=1):
-        """ custom pytorch dataset class to load deepCR-mask training data
+        """ 
+        Set the dataset with the arguments : images (3D arrays/2D array path), CRs masks, ignore mask, 
+        sky background, sky augmentation values and train/val partition.
+        custom pytorch dataset class to load deepCR-mask training data
         :param image: image with CR. Could be (N, W, H) array or list of path to single (W, H) images.
         :param mask: CR mask. Could be (N, W, H) array or list of path to single (W, H) images.
         :param ignore: (optional) loss mask, e.g., bad pixel, saturation, etc. Could be (N, W, H) array or list
@@ -164,9 +180,15 @@ class dataset(Dataset):
         self.aug_sky = aug_sky
 
     def __len__(self):
+        """
+        Return the number of images in the dataset
+        """
         return self.image.shape[0]
 
     def __getitem__(self, i):
+        """
+        Return the augmented sample image i with its CR mask (no CR aug) and its ignore mask
+        """
         a = (self.aug_sky[0] + np.random.rand() * (self.aug_sky[1] - self.aug_sky[0])) * self.sky[i]
         ignore = self.ignore[i] if type(self.ignore[i]) != str else np.load(self.ignore[i])
         if type(self.image[i]) == str:
@@ -177,7 +199,10 @@ class dataset(Dataset):
 
 class PairedDatasetImagePath(Dataset):
     def __init__(self, paths, skyaug_min=0, skyaug_max=0, part=None, f_val=0.1, seed=1):
-        """ custom pytorch dataset class to load deepCR-mask training data
+        """ 
+        Set the dataset with the arguments : images paths (3D arrays with image/cr/ignore), 
+        the minimum and max sky augmentation values and the train/val partition.
+        custom pytorch dataset class to load deepCR-mask training data
         :param paths: (list) list of file paths to (3, W, H) images: image, cr, ignore.
         :param skyaug_min: [float, float]. If sky is provided, use random sky background in the range
           [aug_sky[0] * sky, aug_sky[1] * sky]. This serves as a regularizers to allow the trained model to adapt to a
@@ -206,11 +231,14 @@ class PairedDatasetImagePath(Dataset):
         self.skyaug_max = skyaug_max
 
     def __len__(self):
+        """
+        Return the number of images in the dataset
+        """
         return len(self.paths)
 
     def get_skyaug(self, i):
         """
-        Return the amount of background flux to be added to image
+        Return an array of sky augmentation with min and max values to add in the sample image i.
         The original sky background should be saved in sky.npy in each sub-directory
         Otherwise always return 0
         :param i: index of file
@@ -227,6 +255,9 @@ class PairedDatasetImagePath(Dataset):
             return 0
 
     def __getitem__(self, i):
+        """
+        Return the sample image i with the augmented sky background and the CR/ignore mask
+        """
         data = np.load(self.paths[i])
         image = data[0]
         mask = data[1]
