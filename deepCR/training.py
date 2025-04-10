@@ -99,6 +99,7 @@ class train:
 
         self.TrainLoader = DataLoader(data_train, batch_size=batch_size, shuffle=True, num_workers=8)
         self.ValLoader = DataLoader(data_val, batch_size=batch_size, shuffle=False, num_workers=8)
+        # data_train[0] call get_item(0) fct --> return (img, mask, ignore)
         self.shape = data_train[0][0].shape[1]
         self.name = name
 
