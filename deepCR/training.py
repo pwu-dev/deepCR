@@ -147,12 +147,20 @@ class train:
 
     def set_input(self, img0, mask, ignore):
         """
-        :param img0: input image
-        :param mask: CR mask
-        :param ignore: loss mask
-        :return: None
+        Set inputs by converting them into Pytorch type (CPU or GPU) and reshape into 4D tensor 
+        for batch sampling (batch_size, nb_channels=1, H, W) 
+        
+        Args:
+            img0: input image
+            mask: CR mask
+            ignore: loss mask for ignoring defective pixels
+        
+        Return: 
+            None
         """
+        # Image normalisation
         img0 = (img0 - img0.mean())/img0.std()
+        # Equivalent to torch.tensor(...). "-1" let Pytorch compute the batch_Size
         self.img0 = Variable(img0.type(self.dtype)).view(-1,1, self.shape, self.shape)
         self.mask = Variable(mask.type(self.dtype)).view(-1,1, self.shape, self.shape)
         self.ignore = Variable(ignore.type(self.dtype)).view(-1,1, self.shape, self.shape)
