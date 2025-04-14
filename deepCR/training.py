@@ -81,6 +81,7 @@ class train:
         if sky is None and aug_sky != (0, 0):
             raise AttributeError('Var (sky) is required for sky background augmentation!')
         if ignore is None:
+            # create zeros array of shape of image
             ignore = np.zeros_like(image)
         if mode == 'pair':
             if type(image[0]) == str or type(image[0]) == np.str_:
