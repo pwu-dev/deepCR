@@ -167,27 +167,39 @@ class train:
 
     def validate_mask(self, epoch=None):
         """
+        Compute the mean loss on validation dataset
+
         :return: validation loss. print TPR and FPR at threshold = 0.5.
         """
+        # Set random seed
         torch.random.manual_seed(0)
         np.random.seed(0)
-        lmask = 0; count = 0
+        # Initialize the validation loss 
+        lmask = 0; 
+        # Initialize the number of images used in validation dataset
+        count = 0
         metric = np.zeros(4)
         for i, dat in enumerate(self.ValLoader):
+            # batch_size
             n = dat[0].shape[0]
             count += n
             self.set_input(*dat)
+            # Compute the prediction on the network
             self.pdt_mask = self.network(self.img0)
+            # Compute the mean loss on a batch
             loss = self.backward_network()
+            # Add the total loss
             lmask += float(loss.detach()) * n
+            # Compute metrics with threshold = 0.5
             metric += maskMetric(self.pdt_mask.reshape(-1, self.shape, self.shape).detach().cpu().numpy() > 0.5, dat[1].numpy())
+        # Compute the average loss on validation data
         lmask /= count
         TP, TN, FP, FN = metric[0], metric[1], metric[2], metric[3]
         TPR = TP / (TP + FN)
         FPR = FP / (FP + TN)
         if self.verbose:
             print('[TPR=%.3f, FPR=%.3f] @threshold = 0.5' % (TPR, FPR))
-        if epoch:
+        if epoch: # Register the metrics into TensorBoard with the epoch number if epoch > 0
             self.writer.add_scalar('TPR', TPR, epoch)
             self.writer.add_scalar('FPR', FPR, epoch)
             self.writer.add_scalar('validate_loss', lmask, epoch)
